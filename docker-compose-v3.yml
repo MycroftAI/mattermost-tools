@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+
+  db:
+    image: registry/mattermost-db
+    volumes:
+      - /root/mattermost-docker/volumes/db/var/lib/postgresql/data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - POSTGRES_USER=
+      - POSTGRES_PASSWORD=
+      - POSTGRES_DB=
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+    networks:
+      - mattermost
+
+    # uncomment the following to enable backup
+    environment:
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=
+      - WALE_S3_PREFIX=
+      - AWS_REGION=
+    #  in case your config is not in default location
+    #  - MM_CONFIG=/mattermost/config/config.json
+
+  app:
+    image: registry/mattermost-app
+      # comment out for team edition
+    volumes:
+      - /root/mattermost-docker/volumes/app/mattermost/config:/mattermost/config:rw
+      - /root/mattermost-docker/volumes/app/mattermost/data:/mattermost/data:rw
+      - /root/mattermost-docker/volumes/app/mattermost/logs:/mattermost/logs:rw
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      # set same as db credentials and dbname
+      - MM_USERNAME=
+      - MM_PASSWORD=
+      - MM_DBNAME=
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - mattermost
+
+  web:
+    image: registry/mattermost-web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # This directory must have cert files
+      - /root/mattermost-docker/volumes/web/cert:/cert:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - mattermost
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+    mattermost:
